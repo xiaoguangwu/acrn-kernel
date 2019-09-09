@@ -261,4 +261,5 @@ void intel_gvt_flush_pipe_color(struct intel_gvt *gvt, enum pipe pipe,
 
 int pipe_is_enabled(struct intel_vgpu *vgpu, enum pipe pipe);
 
+int intel_vgpu_g2v_setup_gop(struct intel_vgpu *vgpu);
 #endif

@@ -48,6 +48,7 @@ enum vgt_g2v_type {
 	VGT_G2V_PPGTT_L4_PAGE_TABLE_DESTROY,
 	VGT_G2V_EXECLIST_CONTEXT_CREATE,
 	VGT_G2V_EXECLIST_CONTEXT_DESTROY,
+	VGT_G2V_GOP_SETUP = 13,
 	VGT_G2V_MAX,
 };
 
@@ -57,6 +58,7 @@ enum vgt_g2v_type {
 #define VGT_CAPS_FULL_PPGTT		BIT(2)
 #define VGT_CAPS_HWSP_EMULATION		BIT(3)
 #define VGT_CAPS_HUGE_GTT		BIT(4)
+#define VGT_CAPS_GOP_SUPPORT		BIT(5)
 
 struct vgt_if {
 	u64 magic;		/* VGT_MAGIC */
