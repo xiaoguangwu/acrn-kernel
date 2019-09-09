@@ -61,6 +61,7 @@
 #include "i915_fixed.h"
 #include "i915_params.h"
 #include "i915_reg.h"
+#include "i915_pvinfo.h"
 #include "i915_utils.h"
 
 #include "display/intel_bios.h"
