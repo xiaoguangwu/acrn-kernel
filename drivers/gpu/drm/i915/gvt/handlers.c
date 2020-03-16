@@ -1056,6 +1056,7 @@ static int skl_plane_mmio_write(struct intel_vgpu *vgpu, unsigned int offset,
 			int level, max_level = ilk_wm_max_level(dev_priv);
 			struct vgpu_scaler_config scl_cfg_old;
 			struct skl_pipe_wm wm_cfg_old;
+			uint32_t reg_value;
 
 			gvt_dbg_dpy("vgpu-%d: update scaler on plane-%d PLANE_CTL_ENABLE\n",
 				    vgpu->id, plane);
@@ -1091,8 +1092,8 @@ static int skl_plane_mmio_write(struct intel_vgpu *vgpu, unsigned int offset,
 					      vgpu_calc_wm_level(&disp_path->wm_cfg.planes[plane].trans_wm));
 			}
 
-			I915_WRITE_FW(PLANE_CTL(phy_pipe, plane),
-				      vgpu_vreg_t(vgpu, PLANE_CTL(pipe, plane)));
+			reg_value = vgpu_vreg_t(vgpu, PLANE_CTL(pipe, plane)) & ~DISPPLANE_GAMMA_ENABLE;
+			I915_WRITE_FW(PLANE_CTL(phy_pipe, plane), reg_value);
 		} else {
 			I915_WRITE_FW(_MMIO(phy_offset), vgpu_vreg(vgpu, offset));
 		}
@@ -1148,6 +1149,7 @@ static int skl_cursor_mmio_write(struct intel_vgpu *vgpu, unsigned int offset,
 			struct intel_crtc *intel_crtc = NULL;
 			struct skl_plane_wm cur_wm_old;
 			unsigned long irqflags = 0;
+			uint32_t reg_value;
 
 			for_each_intel_crtc(drm_dev, intel_crtc) {
 				drm_modeset_lock(&intel_crtc->base.mutex, NULL);
@@ -1178,7 +1180,12 @@ static int skl_cursor_mmio_write(struct intel_vgpu *vgpu, unsigned int offset,
 				I915_WRITE_FW(CUR_WM_TRANS(phy_pipe),
 					      vgpu_calc_wm_level(&disp_path->wm_cfg.planes[PLANE_CURSOR].trans_wm));
 			}
-			I915_WRITE_FW(_MMIO(phy_offset), vgpu_vreg(vgpu, offset));
+
+			reg_value = vgpu_vreg(vgpu, offset);
+			if (offset == CURCNTR(pipe).reg)
+				reg_value &= ~MCURSOR_GAMMA_ENABLE;
+
+			I915_WRITE_FW(_MMIO(phy_offset), reg_value);
 
 			spin_unlock_irqrestore(&dev_priv->uncore.lock, irqflags);
 			mutex_unlock(&disp_cfg->sw_lock);
