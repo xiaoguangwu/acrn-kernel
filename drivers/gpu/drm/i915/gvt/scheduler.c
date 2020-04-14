@@ -39,6 +39,7 @@
 #include "gem/i915_gem_pm.h"
 #include "gt/intel_context.h"
 #include "gt/intel_ring.h"
+#include "gt/intel_rps.h"
 
 #include "i915_drv.h"
 #include "intel_pm.h"
@@ -231,14 +232,14 @@ static void active_hp_work(struct work_struct *work)
 		container_of(work, struct intel_gvt, active_hp_work);
 	struct drm_i915_private *dev_priv = gvt->dev_priv;
 
-	gen6_disable_rps_interrupts(dev_priv);
+	intel_rps_park(&dev_priv->gt.rps);
 
-	if (READ_ONCE(dev_priv->gt_pm.rps.cur_freq) !=
-	    READ_ONCE(dev_priv->gt_pm.rps.max_freq)) {
-		struct intel_rps *rps = &dev_priv->gt_pm.rps;
+	if (READ_ONCE(dev_priv->gt.rps.cur_freq) !=
+	    READ_ONCE(dev_priv->gt.rps.max_freq)) {
+		struct intel_rps *rps = &dev_priv->gt.rps;
 
 		mutex_lock(&rps->lock);
-		intel_set_rps(dev_priv, dev_priv->gt_pm.rps.max_freq);
+		intel_rps_set(&dev_priv->gt.rps, dev_priv->gt.rps.max_freq);
 		mutex_unlock(&rps->lock);
 	}
 }

@@ -6202,6 +6202,9 @@ enum {
 			_PLANE(plane, _PLANE_WM_1(pipe), _PLANE_WM_2(pipe))
 #define PLANE_WM(pipe, plane, level)	\
 			_MMIO(_PLANE_WM_BASE(pipe, plane) + ((4) * (level)))
+#define PLANE_WM_BASE(pipe, plane)	\
+			_MMIO(_PLANE_WM_BASE(pipe, plane))
+
 #define _PLANE_WM_TRANS_1(pipe)	\
 			_PIPE(pipe, _PLANE_WM_TRANS_1_A_0, _PLANE_WM_TRANS_1_B_0)
 #define _PLANE_WM_TRANS_2(pipe)	\
