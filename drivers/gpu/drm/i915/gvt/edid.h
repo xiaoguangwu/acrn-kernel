@@ -48,7 +48,7 @@
 
 struct intel_vgpu_edid_data {
 	bool data_valid;
-	unsigned char edid_block[0];
+	unsigned char edid_block[EDID_SIZE];
 };
 
 enum gmbus_cycle_type {
