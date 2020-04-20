@@ -2946,12 +2946,7 @@ static int skl_plane_mmio_write(struct intel_vgpu *vgpu, unsigned int offset,
 	write_vreg(vgpu, offset, p_data, bytes);
 	if ((vgpu_vreg_t(vgpu, PIPECONF(pipe)) & I965_PIPECONF_ACTIVE) &&
 			(vgpu->gvt->pipe_info[pipe].plane_owner[plane] == vgpu->id)) {
-		uint32_t reg_value = vgpu_vreg(vgpu, offset);
-
-		if (offset == PLANE_CTL(pipe, plane).reg)
-			reg_value &= ~DISPPLANE_GAMMA_ENABLE;
-
-		I915_WRITE(_MMIO(offset), reg_value);
+		I915_WRITE(_MMIO(offset), vgpu_vreg(vgpu, offset));
 	}
 	return 0;
 }
@@ -2987,12 +2982,7 @@ static int skl_cursor_mmio_write(struct intel_vgpu *vgpu, unsigned int offset,
 	write_vreg(vgpu, offset, p_data, bytes);
 	if ((vgpu_vreg_t(vgpu, PIPECONF(pipe)) & I965_PIPECONF_ACTIVE) &&
 			(vgpu->gvt->pipe_info[pipe].plane_owner[0] == vgpu->id)) {
-		uint32_t reg_value = vgpu_vreg(vgpu, offset);
-
-		if (offset == CURCNTR(pipe).reg)
-			reg_value &= ~MCURSOR_GAMMA_ENABLE;
-
-		I915_WRITE(_MMIO(offset), reg_value);
+		I915_WRITE(_MMIO(offset), vgpu_vreg(vgpu, offset));
 	}
 
 	return 0;
