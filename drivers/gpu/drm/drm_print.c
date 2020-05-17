@@ -172,6 +172,12 @@ void __drm_printfn_err(struct drm_printer *p, struct va_format *vaf)
 }
 EXPORT_SYMBOL(__drm_printfn_err);
 
+void __drm_printfn_trc(struct drm_printer *p, struct va_format *vaf)
+{
+	trace_printk("xgwu %s %pV", p->prefix, vaf);
+}
+EXPORT_SYMBOL(__drm_printfn_trc);
+
 /**
  * drm_puts - print a const string to a &drm_printer stream
  * @p: the &drm printer

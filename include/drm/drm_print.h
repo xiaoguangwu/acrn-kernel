@@ -86,6 +86,7 @@ void __drm_puts_seq_file(struct drm_printer *p, const char *str);
 void __drm_printfn_info(struct drm_printer *p, struct va_format *vaf);
 void __drm_printfn_debug(struct drm_printer *p, struct va_format *vaf);
 void __drm_printfn_err(struct drm_printer *p, struct va_format *vaf);
+void __drm_printfn_trc(struct drm_printer *p, struct va_format *vaf);
 
 __printf(2, 3)
 void drm_printf(struct drm_printer *p, const char *f, ...);
@@ -243,6 +244,15 @@ static inline struct drm_printer drm_err_printer(const char *prefix)
 {
 	struct drm_printer p = {
 		.printfn = __drm_printfn_err,
+		.prefix = prefix
+	};
+	return p;
+}
+
+static inline struct drm_printer drm_trc_printer(const char *prefix)
+{
+	struct drm_printer p = {
+		.printfn = __drm_printfn_trc,
 		.prefix = prefix
 	};
 	return p;
