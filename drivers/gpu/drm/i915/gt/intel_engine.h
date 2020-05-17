@@ -290,6 +290,11 @@ void intel_engine_dump(struct intel_engine_cs *engine,
 		       struct drm_printer *m,
 		       const char *header, ...);
 
+__printf(3, 4)
+void intel_engine_dump_nolock(struct intel_engine_cs *engine,
+		       struct drm_printer *m,
+		       const char *header, ...);
+
 int intel_enable_engine_stats(struct intel_engine_cs *engine);
 void intel_disable_engine_stats(struct intel_engine_cs *engine);
 

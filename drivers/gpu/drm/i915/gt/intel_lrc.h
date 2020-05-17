@@ -110,6 +110,13 @@ void intel_execlists_show_requests(struct intel_engine_cs *engine,
 							const char *prefix),
 				   unsigned int max);
 
+void intel_execlists_show_requests_nolock(struct intel_engine_cs *engine,
+				   struct drm_printer *m,
+				   void (*show_request)(struct drm_printer *m,
+							struct i915_request *rq,
+							const char *prefix),
+				   unsigned int max);
+
 struct intel_context *
 intel_execlists_create_virtual(struct i915_gem_context *ctx,
 			       struct intel_engine_cs **siblings,

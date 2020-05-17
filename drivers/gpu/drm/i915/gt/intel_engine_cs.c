@@ -1539,6 +1539,89 @@ void intel_engine_dump(struct intel_engine_cs *engine,
 	intel_engine_print_breadcrumbs(engine, m);
 }
 
+void intel_engine_dump_nolock(struct intel_engine_cs *engine,
+		       struct drm_printer *m,
+		       const char *header, ...)
+{
+	struct i915_gpu_error * const error = &engine->i915->gpu_error;
+	struct i915_request *rq;
+	intel_wakeref_t wakeref;
+
+	if (header) {
+		va_list ap;
+
+		va_start(ap, header);
+		drm_vprintf(m, header, &ap);
+		va_end(ap);
+	}
+
+	if (intel_gt_is_wedged(engine->gt))
+		drm_printf(m, "*** WEDGED ***\n");
+
+	drm_printf(m, "\tAwake? %d\n", atomic_read(&engine->wakeref.count));
+
+	rcu_read_lock();
+	rq = READ_ONCE(engine->heartbeat.systole);
+	if (rq)
+		drm_printf(m, "\tHeartbeat: %d ms ago\n",
+			   jiffies_to_msecs(jiffies - rq->emitted_jiffies));
+	rcu_read_unlock();
+	drm_printf(m, "\tReset count: %d (global %d)\n",
+		   i915_reset_engine_count(error, engine),
+		   i915_reset_count(error));
+
+	drm_printf(m, "\tRequests:\n");
+
+	rq = intel_engine_find_active_request(engine);
+	if (rq) {
+		struct intel_timeline *tl = get_timeline(rq);
+
+		print_request(m, rq, "\t\tactive ");
+
+		drm_printf(m, "\t\tring->start:  0x%08x\n",
+			   i915_ggtt_offset(rq->ring->vma));
+		drm_printf(m, "\t\tring->head:   0x%08x\n",
+			   rq->ring->head);
+		drm_printf(m, "\t\tring->tail:   0x%08x\n",
+			   rq->ring->tail);
+		drm_printf(m, "\t\tring->emit:   0x%08x\n",
+			   rq->ring->emit);
+		drm_printf(m, "\t\tring->space:  0x%08x\n",
+			   rq->ring->space);
+
+		if (tl) {
+			drm_printf(m, "\t\tring->hwsp:   0x%08x\n",
+				   tl->hwsp_offset);
+			intel_timeline_put(tl);
+		}
+
+		print_request_ring(m, rq);
+
+		if (rq->hw_context->lrc_reg_state) {
+			drm_printf(m, "Logical Ring Context:\n");
+			hexdump(m, rq->hw_context->lrc_reg_state, PAGE_SIZE);
+		}
+	}
+
+	drm_printf(m, "\tMMIO base:  0x%08x\n", engine->mmio_base);
+	wakeref = intel_runtime_pm_get_if_in_use(engine->uncore->rpm);
+	if (wakeref) {
+		intel_engine_print_registers(engine, m);
+		intel_runtime_pm_put(engine->uncore->rpm, wakeref);
+	} else {
+		drm_printf(m, "\tDevice is asleep; skipping register dump\n");
+	}
+
+	intel_execlists_show_requests_nolock(engine, m, print_request, 8);
+
+	drm_printf(m, "HWSP:\n");
+	hexdump(m, engine->status_page.addr, PAGE_SIZE);
+
+	drm_printf(m, "Idle? %s\n", yesno(intel_engine_is_idle(engine)));
+
+	intel_engine_print_breadcrumbs(engine, m);
+}
+
 /**
  * intel_enable_engine_stats() - Enable engine busy tracking on engine
  * @engine: engine to enable stats collection
