@@ -662,16 +662,22 @@ static int eb_reserve(struct i915_execbuffer *eb)
 	err = 0;
 	do {
 		list_for_each_entry(vma, &eb->unbound, exec_link) {
+			printk("xgwu: %s %d\n", __func__, __LINE__);
 			err = eb_reserve_vma(eb, vma);
-			if (err)
+			if (err) {
+				printk("xgwu: %s %d\n", __func__, __LINE__);
 				break;
+			}
 		}
-		if (err != -ENOSPC)
+		if (err != -ENOSPC) {
+			printk("xgwu: %s %d err %d\n", __func__, __LINE__, err);
 			return err;
+		}
 
 		/* Resort *all* the objects into priority order */
 		INIT_LIST_HEAD(&eb->unbound);
 		INIT_LIST_HEAD(&last);
+		printk("xgwu: %s %d, count %d\n", __func__, __LINE__, count);
 		for (i = 0; i < count; i++) {
 			unsigned int flags = eb->flags[i];
 			struct i915_vma *vma = eb->vma[i];
@@ -680,6 +686,7 @@ static int eb_reserve(struct i915_execbuffer *eb)
 			    flags & __EXEC_OBJECT_HAS_PIN)
 				continue;
 
+			printk("xgwu: %s %d\n", __func__, __LINE__);
 			eb_unreserve_vma(vma, &eb->flags[i]);
 
 			if (flags & EXEC_OBJECT_PINNED)
@@ -696,12 +703,15 @@ static int eb_reserve(struct i915_execbuffer *eb)
 		}
 		list_splice_tail(&last, &eb->unbound);
 
+		printk("xgwu: %s %d, pass %d\n", __func__, __LINE__, pass);
 		switch (pass++) {
 		case 0:
+			printk("xgwu: %s %d\n", __func__, __LINE__);
 			break;
 
 		case 1:
 			/* Too fragmented, unbind everything and retry */
+			printk("xgwu: %s %d\n", __func__, __LINE__);
 			mutex_lock(&eb->context->vm->mutex);
 			err = i915_gem_evict_vm(eb->context->vm);
 			mutex_unlock(&eb->context->vm->mutex);
@@ -769,8 +779,10 @@ static int eb_lookup_vmas(struct i915_execbuffer *eb)
 		struct i915_vma *vma;
 
 		vma = radix_tree_lookup(handles_vma, handle);
-		if (likely(vma))
+		if (likely(vma)) {
+			printk("xgwu: %s %d\n", __func__, __LINE__);
 			goto add_vma;
+		}
 
 		obj = i915_gem_object_lookup(eb->file, handle);
 		if (unlikely(!obj)) {
@@ -781,24 +793,29 @@ static int eb_lookup_vmas(struct i915_execbuffer *eb)
 		vma = i915_vma_instance(obj, eb->context->vm, NULL);
 		if (IS_ERR(vma)) {
 			err = PTR_ERR(vma);
+			printk("xgwu: %s %d err %d\n", __func__, __LINE__, err);
 			goto err_obj;
 		}
 
 		lut = i915_lut_handle_alloc();
 		if (unlikely(!lut)) {
 			err = -ENOMEM;
+			printk("xgwu: %s %d\n", __func__, __LINE__);
 			goto err_obj;
 		}
 
 		err = radix_tree_insert(handles_vma, handle, vma);
 		if (unlikely(err)) {
+			printk("xgwu: %s %d\n", __func__, __LINE__);
 			i915_lut_handle_free(lut);
 			goto err_obj;
 		}
 
 		/* transfer ref to lut */
-		if (!atomic_fetch_inc(&vma->open_count))
+		if (!atomic_fetch_inc(&vma->open_count)) {
+			printk("xgwu: %s %d\n", __func__, __LINE__);
 			i915_vma_reopen(vma);
+		}
 		lut->handle = handle;
 		lut->ctx = eb->gem_context;
 
@@ -808,8 +825,10 @@ static int eb_lookup_vmas(struct i915_execbuffer *eb)
 
 add_vma:
 		err = eb_add_vma(eb, i, batch, vma);
-		if (unlikely(err))
+		if (unlikely(err)) {
+			printk("xgwu: %s %d, err %d\n", __func__, __LINE__, err);
 			goto err_vma;
+		}
 
 		GEM_BUG_ON(vma != eb->vma[i]);
 		GEM_BUG_ON(vma->exec_flags != &eb->flags[i]);
@@ -820,6 +839,7 @@ add_vma:
 	mutex_unlock(&eb->gem_context->mutex);
 
 	eb->args->flags |= __EXEC_VALIDATED;
+	printk("xgwu: %s %d\n", __func__, __LINE__);
 	return eb_reserve(eb);
 
 err_obj:
@@ -1741,11 +1761,14 @@ repeat:
 	 * were interrupted (EAGAIN) whilst waiting for the objects, try again.
 	 */
 	if (!err) {
+		printk("xgwu: %s %d\n", __func__, __LINE__);
 		err = eb_prefault_relocations(eb);
 	} else if (!have_copy) {
+		printk("xgwu: %s %d\n", __func__, __LINE__);
 		err = eb_copy_relocations(eb);
 		have_copy = err == 0;
 	} else {
+		printk("xgwu: %s %d\n", __func__, __LINE__);
 		cond_resched();
 		err = 0;
 	}
@@ -1765,19 +1788,24 @@ repeat:
 
 	/* reacquire the objects */
 	err = eb_lookup_vmas(eb);
+	printk("xgwu: %s %d err %d\n", __func__, __LINE__, err);
 	if (err)
 		goto err;
 
 	GEM_BUG_ON(!eb->batch);
 
+	printk("xgwu: %s %d\n", __func__, __LINE__);
 	list_for_each_entry(vma, &eb->relocs, reloc_link) {
 		if (!have_copy) {
+			printk("xgwu: %s %d\n", __func__, __LINE__);
 			pagefault_disable();
 			err = eb_relocate_vma(eb, vma);
 			pagefault_enable();
 			if (err)
 				goto repeat;
 		} else {
+
+			printk("xgwu: %s %d\n", __func__, __LINE__);
 			err = eb_relocate_vma_slow(eb, vma);
 			if (err)
 				goto err;
@@ -1818,14 +1846,18 @@ out:
 
 static int eb_relocate(struct i915_execbuffer *eb)
 {
-	if (eb_lookup_vmas(eb))
+	if (eb_lookup_vmas(eb)) {
+		printk("xgwu: %s %d\n", __func__, __LINE__);
 		goto slow;
+	}
 
 	/* The objects are in their final locations, apply the relocations. */
 	if (eb->args->flags & __EXEC_HAS_RELOC) {
 		struct i915_vma *vma;
 
+		printk("xgwu: %s %d\n", __func__, __LINE__);
 		list_for_each_entry(vma, &eb->relocs, reloc_link) {
+			printk("xgwu: %s %d\n", __func__, __LINE__);
 			if (eb_relocate_vma(eb, vma))
 				goto slow;
 		}
@@ -2505,6 +2537,7 @@ i915_gem_do_execbuffer(struct drm_device *dev,
 	if (DBG_FORCE_RELOC || !(args->flags & I915_EXEC_NO_RELOC))
 		args->flags |= __EXEC_HAS_RELOC;
 
+	printk("xgwu: %s %d buffer_count = %d\n", __func__, __LINE__, args->buffer_count);
 	eb.exec = exec;
 	eb.vma = (struct i915_vma **)(exec + args->buffer_count + 1);
 	eb.vma[0] = NULL;
