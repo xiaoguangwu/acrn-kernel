@@ -1916,6 +1916,12 @@ static void execlists_dequeue(struct intel_engine_cs *engine)
 			}
 
 			if (__i915_request_submit(rq)) {
+
+				struct drm_printer p = drm_trc_printer("dump");
+
+				intel_engine_dump_nolock(engine, &p, "%s dump {prio:%d} not ticking\n",
+						engine->name, rq->sched.attr.priority);
+
 				if (!merge) {
 					*port = execlists_schedule_in(last, port - execlists->pending);
 					port++;

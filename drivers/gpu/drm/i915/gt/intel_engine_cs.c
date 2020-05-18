@@ -1560,12 +1560,16 @@ void intel_engine_dump_nolock(struct intel_engine_cs *engine,
 
 	drm_printf(m, "\tAwake? %d\n", atomic_read(&engine->wakeref.count));
 
+#if 0
 	rcu_read_lock();
+#endif
 	rq = READ_ONCE(engine->heartbeat.systole);
 	if (rq)
 		drm_printf(m, "\tHeartbeat: %d ms ago\n",
 			   jiffies_to_msecs(jiffies - rq->emitted_jiffies));
+#if 0
 	rcu_read_unlock();
+#endif
 	drm_printf(m, "\tReset count: %d (global %d)\n",
 		   i915_reset_engine_count(error, engine),
 		   i915_reset_count(error));
@@ -1606,7 +1610,10 @@ void intel_engine_dump_nolock(struct intel_engine_cs *engine,
 	drm_printf(m, "\tMMIO base:  0x%08x\n", engine->mmio_base);
 	wakeref = intel_runtime_pm_get_if_in_use(engine->uncore->rpm);
 	if (wakeref) {
+#if 0
+		printk("xgwu: %s %d\n", __func__, __LINE__);
 		intel_engine_print_registers(engine, m);
+#endif
 		intel_runtime_pm_put(engine->uncore->rpm, wakeref);
 	} else {
 		drm_printf(m, "\tDevice is asleep; skipping register dump\n");
@@ -1617,7 +1624,10 @@ void intel_engine_dump_nolock(struct intel_engine_cs *engine,
 	drm_printf(m, "HWSP:\n");
 	hexdump(m, engine->status_page.addr, PAGE_SIZE);
 
+#if 0
+	printk("xgwu: %s %d\n", __func__, __LINE__);
 	drm_printf(m, "Idle? %s\n", yesno(intel_engine_is_idle(engine)));
+#endif
 
 	intel_engine_print_breadcrumbs(engine, m);
 }
@@ -1755,12 +1765,13 @@ intel_engine_find_active_request(struct intel_engine_cs *engine)
 	 */
 	lockdep_assert_held(&engine->active.lock);
 	list_for_each_entry(request, &engine->active.requests, sched.link) {
+#if 0
 		if (i915_request_completed(request))
 			continue;
 
 		if (!i915_request_started(request))
 			continue;
-
+#endif
 		/* More than one preemptible request may match! */
 		if (!match_ring(request))
 			continue;
