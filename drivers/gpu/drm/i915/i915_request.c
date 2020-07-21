@@ -272,8 +272,8 @@ bool i915_request_retire(struct i915_request *rq)
 	remove_from_client(rq);
 	list_del(&rq->link);
 
-	intel_context_exit(rq->hw_context);
 	intel_context_unpin(rq->hw_context);
+	intel_context_exit(rq->hw_context);
 
 	free_capture_list(rq);
 	i915_sched_node_fini(&rq->sched);
